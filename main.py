@@ -8,7 +8,7 @@ from src import engine, utils
 from src.dataset import AbbreviationDetectionDataset
 
 TRAIN_FILEPATH = "data/AAAI-21-SDU-shared-task-1-AI/dataset/train.json"
-VAL_FILEPATH = "data/AAAI-21-SDU-shared-task-1-AI/dataset/val.json"
+VAL_FILEPATH = "data/AAAI-21-SDU-shared-task-1-AI/dataset/dev.json"
 LABEL_TO_NUM_DICT = {
     "O": 0,
     "B-long": 1,
