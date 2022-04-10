@@ -22,7 +22,7 @@ NUM_TO_LABEL_DICT = dict(((n, s) for s, n in LABEL_TO_NUM_DICT.items()))
 MODEL_PATH = "allenai/scibert_scivocab_cased"
 EPOCHS = 5
 LR = 1e-5
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 wandb_logger = WandBLogger("abbreviation-detection")
