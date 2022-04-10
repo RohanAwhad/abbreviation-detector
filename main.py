@@ -49,3 +49,5 @@ model, optimizer = engine.train(
     optimizer=optimizer,
     device=DEVICE,
 )
+
+torch.save(model.state_dict(), "models/abbreviation_detector_v1.pt")
