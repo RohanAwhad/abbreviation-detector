@@ -15,6 +15,7 @@ def train(
     scheduler=None,
     shuffle=True,
     device="cpu",
+    logger=None,
 ):
     train_dataloader = DataLoader(
         train_dataset,
@@ -59,6 +60,8 @@ def train(
             progress_bar.set_postfix({"Train Loss": sum(train_loss) / len(train_loss)})
             progress_bar.update()
 
+            logger.log({"train loss": sum(train_loss) / len(train_loss)})
+
         # Val
         if val_dataset:
             model.eval()  # Set's dropout and other training specific variables to 0
@@ -82,6 +85,7 @@ def train(
                         }
                     )
                     progress_bar.update()
+                    logger.log({"val loss": sum(val_loss) / len(val_loss)})
 
             progress_bar.close()
 

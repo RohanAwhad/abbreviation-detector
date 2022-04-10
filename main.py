@@ -6,6 +6,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 
 from src import engine, utils
 from src.dataset import AbbreviationDetectionDataset
+from src.logger import WandBLogger
 
 TRAIN_FILEPATH = "data/AAAI-21-SDU-shared-task-1-AI/dataset/train.json"
 VAL_FILEPATH = "data/AAAI-21-SDU-shared-task-1-AI/dataset/dev.json"
@@ -24,6 +25,16 @@ LR = 2e-5
 BATCH_SIZE = 8
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
+wandb_logger = WandBLogger("abbreviation-detection")
+wandb_logger.init(
+    config={
+        "dataset": "AAAI-21-SDU",
+        "model": MODEL_PATH,
+        "learning_rate": LR,
+        "batch_size": BATCH_SIZE,
+        "epochs": EPOCHS,
+    }
+)
 train_raw = utils.load_json(TRAIN_FILEPATH)
 val_raw = utils.load_json(VAL_FILEPATH)
 
@@ -32,6 +43,7 @@ model = AutoModelForTokenClassification.from_pretrained(
     MODEL_PATH, num_labels=len(LABEL_TO_NUM_DICT)
 )
 model.to(DEVICE)
+wandb_logger.watch(model)
 
 train_dataset = AbbreviationDetectionDataset(train_raw, tokenizer, LABEL_TO_NUM_DICT)
 val_dataset = AbbreviationDetectionDataset(val_raw, tokenizer, LABEL_TO_NUM_DICT)
@@ -48,6 +60,7 @@ model, optimizer = engine.train(
     criterion=criterion,
     optimizer=optimizer,
     device=DEVICE,
+    logger=wandb_logger,
 )
 
 torch.save(model.state_dict(), "models/abbreviation_detector_v1.pt")
