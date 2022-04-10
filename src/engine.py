@@ -1,6 +1,5 @@
 import torch
 
-from random import shuffle
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
