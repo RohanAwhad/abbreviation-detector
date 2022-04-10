@@ -72,8 +72,6 @@ def train(
 
                     outputs = model(input_ids, attention_mask, token_type_ids)
                     loss = criterion(torch.swapaxes(outputs.logits, 1, 2), labels)
-                    loss.backward()
-                    optimizer.step()
 
                     val_loss.append(loss.item())
 
