@@ -21,7 +21,7 @@ NUM_TO_LABEL_DICT = dict(((n, s) for s, n in LABEL_TO_NUM_DICT.items()))
 
 MODEL_PATH = "allenai/scibert_scivocab_cased"
 EPOCHS = 5
-LR = 2e-5
+LR = 1e-5
 BATCH_SIZE = 8
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -31,7 +31,6 @@ wandb_logger.init(
         "dataset": "AAAI-21-SDU",
         "model": MODEL_PATH,
         "learning_rate": LR,
-        "batch_size": BATCH_SIZE,
         "epochs": EPOCHS,
     }
 )
@@ -63,4 +62,4 @@ model, optimizer = engine.train(
     logger=wandb_logger,
 )
 
-torch.save(model.state_dict(), "models/abbreviation_detector_v1.pt")
+torch.save(model.state_dict(), "models/abbreviation_detector_v2.pt")
