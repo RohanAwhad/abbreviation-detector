@@ -28,7 +28,9 @@ train_raw = utils.load_json(TRAIN_FILEPATH)
 val_raw = utils.load_json(VAL_FILEPATH)
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, do_lower_case=False)
-model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
+model = AutoModelForTokenClassification.from_pretrained(
+    MODEL_PATH, num_labels=len(LABEL_TO_NUM_DICT)
+)
 model.to(DEVICE)
 
 train_dataset = AbbreviationDetectionDataset(train_raw, tokenizer, LABEL_TO_NUM_DICT)
