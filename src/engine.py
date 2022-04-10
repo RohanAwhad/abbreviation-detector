@@ -15,6 +15,7 @@ def train(
     val_dataset=None,
     scheduler=None,
     shuffle=True,
+    device="cpu",
 ):
     train_dataloader = DataLoader(
         train_dataset,
@@ -41,10 +42,10 @@ def train(
         train_loss = []
         for data in train_dataloader:
             # Predict -> Calc Loss -> Step Optimizer
-            labels = data["labels"].to("cuda")
-            input_ids = data["input_ids"].to("cuda")
-            attention_mask = data["attention_mask"].to("cuda")
-            token_type_ids = data["token_type_ids"].to("cuda")
+            labels = data["labels"].to(device)
+            input_ids = data["input_ids"].to(device)
+            attention_mask = data["attention_mask"].to(device)
+            token_type_ids = data["token_type_ids"].to(device)
 
             optimizer.zero_grad()
 
@@ -65,10 +66,10 @@ def train(
                 val_loss = []
                 with torch.no_grad():
                     for data in val_dataloader:
-                        labels = data["labels"].to("cuda")
-                        input_ids = data["input_ids"].to("cuda")
-                        attention_mask = data["attention_mask"].to("cuda")
-                        token_type_ids = data["token_type_ids"].to("cuda")
+                        labels = data["labels"].to(device)
+                        input_ids = data["input_ids"].to(device)
+                        attention_mask = data["attention_mask"].to(device)
+                        token_type_ids = data["token_type_ids"].to(device)
 
                         outputs = model(input_ids, attention_mask, token_type_ids)
                         loss = criterion(torch.swapaxes(outputs.logits, 1, 2), labels)
