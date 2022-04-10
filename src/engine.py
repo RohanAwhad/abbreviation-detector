@@ -40,7 +40,7 @@ def train(
         # Train
         model.train()
         train_loss = []
-        for data in train_dataloader:
+        for i, data in enumerate(train_dataloader):
             # Predict -> Calc Loss -> Step Optimizer
             labels = data["labels"].to(device)
             input_ids = data["input_ids"].to(device)
@@ -60,14 +60,17 @@ def train(
             progress_bar.set_postfix({"Train Loss": sum(train_loss) / len(train_loss)})
             progress_bar.update()
 
-            logger.log({"train loss": sum(train_loss) / len(train_loss)})
+            logger.log(
+                data={"train loss": sum(train_loss) / len(train_loss)},
+                step=(epoch - 1) * len(train_dataloader) + (i + 1),
+            )
 
         # Val
         if val_dataset:
             model.eval()  # Set's dropout and other training specific variables to 0
             val_loss = []
             with torch.no_grad():
-                for data in val_dataloader:
+                for i, data in enumerate(val_dataloader):
                     labels = data["labels"].to(device)
                     input_ids = data["input_ids"].to(device)
                     attention_mask = data["attention_mask"].to(device)
@@ -85,7 +88,10 @@ def train(
                         }
                     )
                     progress_bar.update()
-                    logger.log({"val loss": sum(val_loss) / len(val_loss)})
+                    logger.log(
+                        data={"val loss": sum(val_loss) / len(val_loss)},
+                        step=(epoch - 1) * len(val_dataloader) + (i + 1),
+                    )
 
             progress_bar.close()
 

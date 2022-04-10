@@ -12,8 +12,8 @@ class WandBLogger:
             config=config,
         )
 
-    def log(self, metric):
-        wandb.log(metric)
+    def log(self, data, step):
+        wandb.log(data=data, step=step)
 
     def watch(self, model):
         wandb.watch(model)
