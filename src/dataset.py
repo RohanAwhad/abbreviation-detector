@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 
 
-class AcronymDetectionDataset(Dataset):
+class AbbreviationDetectionDataset(Dataset):
     def __init__(self, data, tokenizer, label_to_num_dict, max_length=256):
         self.data = data
         self.tokenizer = tokenizer
