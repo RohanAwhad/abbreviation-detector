@@ -129,6 +129,32 @@ def get_long_short_pairs(model_output):
 
             gap = 3
 
+    if long_form_found and short_form_found:
+        # Long form str
+        curr_long_form = []
+        start, end = long_form_start_end
+        if end == -1:
+            curr_long_form = model_output[start][0]
+        else:
+            for j in range(start, end + 1):
+                curr_long_form.append(model_output[j][0])
+
+            curr_long_form = " ".join(curr_long_form)
+
+        # Short form str
+        curr_short_form = []
+        start, end = short_form_start_end
+        if end == -1:
+            curr_short_form = model_output[start][0]
+        else:
+            for j in range(start, end + 1):
+                curr_short_form.append(model_output[j][0])
+
+            curr_short_form = " ".join(curr_short_form)
+
+        # Add to the list
+        all_long_short_pairs.append((curr_long_form, curr_short_form))
+
     return all_long_short_pairs
 
 
@@ -145,14 +171,13 @@ def get_short_forms(model_output):
 
 if __name__ == "__main__":
     test_input = [
-        ("progenitor", "O"),
-        ("virus", "O"),
-        ("of", "O"),
-        ("SARS", "B-short"),
-        ("-", "I-short"),
-        ("CoV", "I-short"),
-        ("from", "O"),
-        ("bats", "O"),
-        ("have", "O"),
+        ("the", "O"),
+        ("human", "O"),
+        ("angiotensin", "B-long"),
+        ("converting", "I-long"),
+        ("enzyme", "I-long"),
+        ("II", "I-long"),
+        ("(", "O"),
+        ("ACE2", "B-short"),
     ]
-    print(get_short_forms(test_input))
+    print(get_long_short_pairs(test_input))
