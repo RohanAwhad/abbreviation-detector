@@ -1,14 +1,81 @@
-def compile_model_output(tokenizer, input_ids, model_output):
+def compile_model_output(tokenizer, batch_input_ids, batch_model_output, OVERLAP):
     ret = []
 
-    for inp_id, label in zip(input_ids, model_output):
-        token = tokenizer.convert_ids_to_tokens(inp_id.item())
-        if token[:2] == "##":
-            _tmp = ret[-1]
-            ret[-1] = (tokenizer.convert_tokens_to_string([_tmp[0], token]), _tmp[1])
-            continue
+    for input_ids, model_output in zip(batch_input_ids, batch_model_output):
+        _ignore = []
+        for inp_id, label in zip(input_ids, model_output):
+            token = tokenizer.convert_ids_to_tokens(inp_id.item())
+            if token == "[CLS]":
+                continue
+            if token == "[SEP]":
+                break
+            if token[:2] == "##":
+                _tmp = _ignore[-1]
+                _ignore[-1] = (
+                    tokenizer.convert_tokens_to_string([_tmp[0], token]),
+                    _tmp[1],
+                )
+                continue
 
-        ret.append((token, label))
+            _ignore.append((token, label))
+
+        """
+        if len(ret) > 0:
+            _tmp_overlap = OVERLAP
+            overlapping_part_1 = ret[-_tmp_overlap:]
+            overlapping_part_2 = _ignore[:_tmp_overlap]
+
+            if len(overlapping_part_2) < OVERLAP:
+                _tmp_overlap = len(overlapping_part_2)
+                overlapping_part_1 = ret[-_tmp_overlap:]
+
+            # Sync last and first of the overlapping part
+            if (
+                overlapping_part_1[-1] != overlapping_part_2[-1]
+                and overlapping_part_1[-1] == _ignore[_tmp_overlap]
+            ):
+                overlapping_part_2 = _ignore[: _tmp_overlap + 1]
+
+            if (
+                overlapping_part_2[0] != overlapping_part_1[0]
+                and overlapping_part_2[0] == ret[-(_tmp_overlap + 1)]
+            ):
+                overlapping_part_1 = ret[-(_tmp_overlap + 1) :]
+
+            print(overlapping_part_1)
+            print(overlapping_part_2)
+            if len(overlapping_part_1) != _tmp_overlap:
+                _tmp_overlap = len(overlapping_part_1)
+
+            assert len(overlapping_part_1) == len(overlapping_part_2)
+
+            resolved_list = []
+            # Give proper labelling of the overlapping part
+            for (token_A, label_A), (token_B, label_B) in zip(
+                overlapping_part_1, overlapping_part_2
+            ):
+                assert token_A == token_B
+
+                if label_A == label_B:
+                    resolved_list.append((token_A, label_A))
+                    continue
+                else:
+                    if label_A == "O":
+                        resolved_list.append((token_B, label_B))
+                    elif label_B == "O":
+                        resolved_list.append((token_A, label_A))
+                    else:
+                        raise Exception(
+                            f"For token: '{token_A}' 2 predictions are \
+                                given: {label_A} and {label_B}"
+                        )
+
+            ret = ret[:-_tmp_overlap] + resolved_list + _ignore[_tmp_overlap:]
+            # ret.extend(_ignore)
+        else:
+            ret.extend(_ignore)
+        """ 
+        ret.extend(_ignore)
 
     return ret
 
