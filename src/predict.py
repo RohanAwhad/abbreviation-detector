@@ -19,62 +19,6 @@ def compile_model_output(tokenizer, batch_input_ids, batch_model_output, OVERLAP
 
             _ignore.append((token, label))
 
-        """
-        if len(ret) > 0:
-            _tmp_overlap = OVERLAP
-            overlapping_part_1 = ret[-_tmp_overlap:]
-            overlapping_part_2 = _ignore[:_tmp_overlap]
-
-            if len(overlapping_part_2) < OVERLAP:
-                _tmp_overlap = len(overlapping_part_2)
-                overlapping_part_1 = ret[-_tmp_overlap:]
-
-            # Sync last and first of the overlapping part
-            if (
-                overlapping_part_1[-1] != overlapping_part_2[-1]
-                and overlapping_part_1[-1] == _ignore[_tmp_overlap]
-            ):
-                overlapping_part_2 = _ignore[: _tmp_overlap + 1]
-
-            if (
-                overlapping_part_2[0] != overlapping_part_1[0]
-                and overlapping_part_2[0] == ret[-(_tmp_overlap + 1)]
-            ):
-                overlapping_part_1 = ret[-(_tmp_overlap + 1) :]
-
-            print(overlapping_part_1)
-            print(overlapping_part_2)
-            if len(overlapping_part_1) != _tmp_overlap:
-                _tmp_overlap = len(overlapping_part_1)
-
-            assert len(overlapping_part_1) == len(overlapping_part_2)
-
-            resolved_list = []
-            # Give proper labelling of the overlapping part
-            for (token_A, label_A), (token_B, label_B) in zip(
-                overlapping_part_1, overlapping_part_2
-            ):
-                assert token_A == token_B
-
-                if label_A == label_B:
-                    resolved_list.append((token_A, label_A))
-                    continue
-                else:
-                    if label_A == "O":
-                        resolved_list.append((token_B, label_B))
-                    elif label_B == "O":
-                        resolved_list.append((token_A, label_A))
-                    else:
-                        raise Exception(
-                            f"For token: '{token_A}' 2 predictions are \
-                                given: {label_A} and {label_B}"
-                        )
-
-            ret = ret[:-_tmp_overlap] + resolved_list + _ignore[_tmp_overlap:]
-            # ret.extend(_ignore)
-        else:
-            ret.extend(_ignore)
-        """ 
         ret.extend(_ignore)
 
     return ret
@@ -91,7 +35,7 @@ def remove_mislabeled_O_in_btwn_B_I(model_output):
     B_found_flag = False
     gap = 2
 
-    for i, (word, label) in enumerate(model_output):
+    for i, (_, label) in enumerate(model_output):
         if label == "O" and not B_found_flag:
             continue
 

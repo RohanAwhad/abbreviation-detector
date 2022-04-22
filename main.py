@@ -33,34 +33,7 @@ saved_model.load_state_dict(
 
 
 def run(text):
-    # pre processing
-    """
-    batch = []
-    ids = TOKENIZER.encode(text)
-    words = TOKENIZER.decode(ids[1:-1]).split()
-
-    if len(words) > MAX_LENGTH:
-        for i in range(0, len(words), MAX_LENGTH - OVERLAP):
-            batch.append(" ".join(words[i : i + MAX_LENGTH]))
-    else:
-        batch.append(" ".join(words))
-
-    """
-    """
-    batch = []
-    for sent in sent_tokenize(text):
-        ids = TOKENIZER.encode(sent)
-        words = TOKENIZER.decode(ids[1:-1]).split()
-
-        if len(words) > MAX_LENGTH:
-            for i in range(0, len(words), MAX_LENGTH - OVERLAP):
-                batch.append(" ".join(words[i : i + MAX_LENGTH]))
-        else:
-            batch.append(" ".join(words))
-    """
     batch = [sent for sent in sent_tokenize(text)]
-
-    print(batch)
 
     tokenized_inputs = TOKENIZER(batch, padding=True, return_tensors="pt")
     with torch.no_grad():
