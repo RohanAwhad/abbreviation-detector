@@ -33,7 +33,11 @@ class AbbreviationDetector:
     ) -> None:
 
         Doc.set_extension("abbreviations", default=[], force=True)
+        Doc.set_extension("abbreviation_pairs", default=[], force=True)
+        Doc.set_extension("long2short", default={}, force=True)
+        Doc.set_extension("short2long", default={}, force=True)
         Span.set_extension("long_form", default=None, force=True)
+        Span.set_extension("is_short_form", default=False, force=True)
 
         self.make_serializable = make_serializable
 
@@ -52,6 +56,9 @@ class AbbreviationDetector:
 
         self._discard_single_letter_abbreviation(text_sents, synced_predictions)
         self._correct_mislabeled_O(synced_predictions)
+        self.get_long_short_pairs(sentences, synced_predictions, doc)
+        self._tag_short_forms(sentences, synced_predictions, doc)
+
         for sent, labels in zip(text_sents, synced_predictions):
             for word, token in zip(sent, labels):
                 print(f'{word}: {token}')
@@ -128,6 +135,140 @@ class AbbreviationDetector:
                         gap = 2
                         _tmp = []
 
+    def _tag_short_forms(self, sentences, predictions, doc):
+        short_form_list = []
+        for sent, pred in zip(sentences, predictions):
+            b_found = False
+            _tmp = []
+            for token, label in zip(sent, pred):
+                if label == "B-short":
+                    b_found = True
+                    _tmp.append(token.i)
+                if b_found and label == "O":
+                    short_form = doc[_tmp[0]: _tmp[-1]+1]
+                    short_form._.is_short_form = True
+                    short_form._.long_form = doc._.short2long[short_form.text]
+                    short_form_list.append(short_form)
+
+                    b_found = False
+                    _tmp = []
+
+        doc._.abbreviations = [self._serialize_short_form(short_form) for short_form in short_form_list]
+
+    def _serialize_short_form(self, short_form):
+        return {
+            'short_form': short_form.text,
+            'start': short_form.start,
+            'end': short_form.end
+        }
+
+
+    def get_long_short_pairs(self, sentences, predictions, doc):
+        all_long_short_pairs = []
+
+        for sent, pred in zip(sentences, predictions):
+            long_form_found = False
+            short_form_found = False
+
+            long_form_start_end = [-1, -1]
+            short_form_start_end = [-1, -1]
+
+            gap = 3
+            for token, label in zip(sent, pred):
+                if label == "O" and not long_form_found:
+                    continue
+                elif label[2:] == "short" and not long_form_found:
+                    continue
+                elif label[2:] == "long":
+                    if label[0] == "B":
+                        long_form_found = True
+                        long_form_start_end[0] = token.i
+                    else:
+                        long_form_start_end[1] = token.i
+                elif label == "O" and not short_form_found:
+                    if gap > 0:
+                        gap -= 1
+                    else:
+                        long_form_found = False
+                        long_form_start_end = [-1, -1]
+                        gap = 3
+
+                elif label[2:] == "short":
+                    if label[0] == "B":
+                        short_form_found = True
+                        short_form_start_end[0] = token.i
+                    else:
+                        short_form_start_end[1] = token.i
+
+                elif label == "O" and long_form_found and short_form_found:
+
+                    # Long form str
+                    start, end = long_form_start_end
+                    if end == -1:
+                        curr_long_form = doc[start: start+1]
+                    else:
+                        curr_long_form = doc[start: end+1]
+
+                    # Short form str
+                    start, end = short_form_start_end
+                    if end == -1:
+                        curr_short_form = doc[start: start+1]
+                    else:
+                        curr_short_form = doc[start: end+1]
+
+                    # Add to the list
+                    all_long_short_pairs.append((curr_long_form, curr_short_form))
+
+                    # Reset
+                    long_form_found = False
+                    short_form_found = False
+
+                    long_form_start_end = [-1, -1]
+                    short_form_start_end = [-1, -1]
+
+                    gap = 3
+
+            if long_form_found and short_form_found:
+                # Long form str
+                start, end = long_form_start_end
+                if end == -1:
+                    curr_long_form = doc[start: start+1]
+                else:
+                    curr_long_form = doc[start: end+1]
+
+                # Short form str
+                start, end = short_form_start_end
+                if end == -1:
+                    curr_short_form = doc[start: start+1]
+                else:
+                    curr_short_form = doc[start: end+1]
+
+                # Add to the list
+                all_long_short_pairs.append((curr_long_form, curr_short_form))
+
+        doc._.abbreviation_pairs = [self._serialize_pairs(pair) for pair in all_long_short_pairs]
+        doc._.long2short = dict((lf.text, sf.text) for lf, sf in all_long_short_pairs)
+        doc._.short2long = dict((sf.text, lf.text) for lf, sf in all_long_short_pairs)
+
+        # check if multiple long forms exist for the same short form
+        all_short = set()
+        for _, sf in all_long_short_pairs:
+            if sf.text in all_short:
+                raise "Multiple short-forms present !"
+            
+            all_short.add(sf)
+
+    def _serialize_pairs(self, pair):
+        long_form, short_form = pair
+        return {
+            "short_form": short_form.text,
+            "short_form_start": short_form.start,
+            "short_form_end": short_form.end,
+            "long_form": long_form.text,
+            "long_form_start": long_form.start,
+            "long_form_end": long_form.end,
+        }
+
 
 
 
@@ -139,3 +280,10 @@ if __name__ == '__main__':
     text = "The 2002-3 pandemic caused by severe acute respiratory syndrome coronavirus (SARS-CoV) was one of the most significant public health events in recent history(1). An ongoing outbreak of Middle East respiratory syndrome coronavirus (MERS-CoV)(2) suggests that this group of viruses remains a major threat and that their distribution is wider than previously recognized. Although bats have been suggested as the natural reservoirs of both viruses(3-5), attempts to isolate the progenitor virus of SARS-CoV from bats have been unsuccessful. Diverse SARS-like coronaviruses (SL-CoVs) have now been reported from bats in China, Europe and Africa(5-8), but none are considered a direct progenitor of SARS-CoV because of their phylogenetic disparity from this virus and the inability of their spike proteins (S) to use the SARS-CoV cellular receptor molecule, the human angiotensin converting enzyme II (ACE2)(9,10). Here, we report whole genome sequences of two novel bat CoVs from Chinese horseshoe bats (Family: Rhinolophidae) in Yunnan, China; RsSHC014 and Rs3367. These viruses are far more closely related to SARS-CoV than any previously identified bat CoVs, particularly in the receptor binding domain (RDB) of the S protein. Most importantly, we report the first recorded isolation of a live SL-CoV (bat SL-CoV-WIV1) from bat fecal samples in Vero E6 cells, which has typical coronavirus morphology, 99.9% sequence identity to Rs3367 and uses the ACE2s from human, civet and Chinese horseshoe bat for cell entry. Preliminary in vitro testing indicates that WIV1 also has a broad species tropism. Our results provide the strongest evidence to date that Chinese horseshoe bats are natural reservoirs of SARS-CoV, and that intermediate hosts may not be necessary for direct human infection by some bat SL-CoVs. They also highlight the importance of pathogen discovery programs targeting high-risk wildlife groups in emerging disease hotspots as a strategy for pandemic preparedness."
     text = 'Although bats have been suggested as the natural reservoirs of both viruses(3-5), attempts to isolate the progenitor virus of SARS-CoV from bats have been unsuccessful. Diverse SARS-like coronaviruses (SL-CoVs) have now been reported from bats in China, Europe and Africa(5-8), but none are considered a direct progenitor of SARS-CoV because of their phylogenetic disparity from this virus and the inability of their spike proteins (S) to use the SARS-CoV cellular receptor molecule, the human angiotensin converting enzyme II (ACE2) (9,10)'
     doc = nlp(text)
+    print(doc._.abbreviations)
+    print(doc._.short2long)
+    for short_form in doc._.abbreviations:
+        start = short_form['start']
+        end = short_form['end']
+        long_form = doc[start:end]._.long_form
+        print(short_form['text'], ':', long_form)
