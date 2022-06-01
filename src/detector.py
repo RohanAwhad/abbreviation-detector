@@ -53,6 +53,9 @@ class AbbreviationDetector:
         output = self.pipe(doc.text)
         logger.debug(output)
 
+        if len(output) == 0:
+            return doc
+
         # get long-short pairs
         all_long_short_pairs = []
         prev_detection = output[0]
