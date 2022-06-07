@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 
-@Language.factory("abbreviation_detector")
-class AbbreviationDetector:
+@Language.factory("lm_abbreviation_detector")
+class LMAbbreviationDetector:
     pipe = None
 
     def __init__(
